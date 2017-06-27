@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Hack to the Future</title>
+
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+   <link rel="icon" type="image/png" href="/static/favicon.png" />
+
+    <link rel="stylesheet" href="/static/retro.css">
+
+    <style>
+    code {
+        color: white !important;
+    }
+    </style>
+
+</head>
+
+<body>
+
+<h1><a id="Back_to_the_Past_0"></a>Back to the Past</h1>
+<p>Marty and Doc have transported themselves wayyy into the future - 2217, to be precise. This far in the future, evil robots rule the world. While Marty and Doc were taking a look outside at the fascinating new world, these evil robots hacked into their DeLorean DMC-12, implanting thousands of codes the robots deemed <em>impossible to crack</em> - CAPTCHAs.</p>
+<p><img src="/static/gulp.gif"></p>
+<h1><a id="Your_Task_6"></a>Your Task</h1>
+<p>Your task is to help Marty and Doc solve these codes and get back to the present year. The car will unlock if you manage to tell the robots 10000 correct answers - they don’t want you to get lucky ;).</p>
+<p>An example CAPTCHA is below:</p>
+<p><img src="./random_image"></p>
+<p>Each captcha has a name associated it with - each name belongs to and uniquely identifies one CAPTCHA. You may bulk download CAPTCHAs from the <a href="challenge">following endpoint</a>.</p>
+<h1><a id="Submission_16"></a>Submission</h1>
+<p>You can submit your answers to the <code>/u/&lt;username&gt;/solution</code> endpoint. It takes a json document of the following format in the post body:</p>
+<pre><code>{
+    'solutions': [
+        {
+            'name': 'CAPTCHA name',
+            'solution': 'CAPTCHA solution'
+        },
+        ...
+    ]
+}
+</code></pre>
+<p>This webserver is stateless - you must submit a document that contains at least 10000 correct answers to unlock the car.</p>
+<h1><a id="Good_Luck_34"></a>Good Luck</h1>
+<p>How you approach this is totally up to you - will you leverage the human advantage? Do you see something the robots don’t? These robots are deterministic - can you deduce the pattern? It’s all up to you.</p>
+
+</body>
+
+</html>
