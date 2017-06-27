@@ -100,17 +100,21 @@ def test_solution(username):
             continue
         if solution['solution'] == real_image_solution(username, solution['name']):
             correct += 1
-            # solved.add(solution['name'])
+            solved.add(solution['name'])
         else:
             incorrect += 1
-    result = {
-        'correct': correct,
-        'incorrect': incorrect,
-    }
     if correct >= 10000:
-        result['message'] = "Congratulations! Marty and Doc are free. You are winrar."
-        result['passcode'] = "TODO - fill in"
-    return jsonify(result)
+        return jsonify({
+            'correct': correct,
+            'incorrect': incorrect,
+            'message': "Congratulations! Marty and Doc are free. You are winrar.",
+            'passcode': "TODO - fill in"
+        })
+    else:
+        return jsonify({
+            'error': "Too few correct solutions"
+            'message': "None of your solutions were correct" if correct == 0 else "At least one of your solutions was correct"
+        })
 
 @app.route('/', methods=['GET'])
 def index():
