@@ -92,6 +92,8 @@ def test_solution(username):
     correct = 0
     incorrect = 0
     content = request.get_json(force=True)
+    if len(content['solutions']) > 15000:
+        return jsonify({'error': "Too many answers submitted"})
     solved = set([])
     for solution in content['solutions']:
         if solution['name'] in solved:
