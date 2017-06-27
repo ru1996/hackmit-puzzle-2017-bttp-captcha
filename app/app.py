@@ -9,7 +9,10 @@ from cStringIO import StringIO
 
 import colorsys
 
+from raven.contrib.flask import Sentry
+
 app = Flask(__name__)
+sentry = Sentry(app)
 
 def get_font(user_hash):
     fonts = [
@@ -112,7 +115,7 @@ def test_solution(username):
         })
     else:
         return jsonify({
-            'error': "Too few correct solutions"
+            'error': "Too few correct solutions",
             'message': "None of your solutions were correct" if correct == 0 else "At least one of your solutions was correct"
         })
 
