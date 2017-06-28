@@ -10,8 +10,10 @@ from cStringIO import StringIO
 import colorsys
 
 from raven.contrib.flask import Sentry
+from date_hash import date_hash
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', None)
 sentry = Sentry(app)
 
 def get_font(user_hash):
@@ -111,7 +113,7 @@ def test_solution(username):
             'correct': correct,
             'incorrect': incorrect,
             'message': "Congratulations! Marty and Doc are free. You are winrar.",
-            'passcode': "TODO - fill in"
+            'passcode': date_hash(app.secret_key, username)
         })
     else:
         return jsonify({
