@@ -18,5 +18,5 @@ COPY . $APP_PATH
 
 WORKDIR $APP_PATH
 
-CMD ["uwsgi", "--http", ":8000", "--wsgi-file", "app/app.py", "--callable", "app"]
+CMD ["uwsgi", "--chdir", "app", "--http", ":8000", "--wsgi-file", "app.py", "--callable", "app"]
 
