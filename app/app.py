@@ -11,6 +11,10 @@ import colorsys
 
 from raven.contrib.flask import Sentry
 from date_hash import date_hash
+from werkzeug.contrib.profiler import ProfilerMiddleware
+
+import ujson
+
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', None)
@@ -46,18 +50,37 @@ def random_color(string):
     hsv1 = (y, 1.0, 0.7)
     return hsv_to_better_color(hsv1)
 
-def draw_rotated(image, angle, letter, font, color, coordinate, size):
+def render_letter(letter):
+    size = FONT.getsize(letter)
     txt=Image.new('L', size)
     d = ImageDraw.Draw(txt)
-    d.text( (0, 0), letter,  font=font, fill=255)
-    w=txt.rotate(angle,  expand=1)
-    image.paste( ImageOps.colorize(w, (0,0,0), color), coordinate,  w)
+    d.text( (0, 0), letter,  font=FONT, fill=255)
+    return txt
+
+LETTER_CACHE = {}
+
+def rotate_letter(letter_img, angle):
+    return letter_img.rotate(angle, expand=1)
+
+for letter in ALPHANUM:
+    letter_img = render_letter(letter)
+    for angle in range(361):
+        k = (letter, angle)
+        LETTER_CACHE[k] = rotate_letter(letter_img, angle)
+
+def draw_rotated(draw, angle, letter, color, coordinate):
+    k = (letter, angle)
+    t = LETTER_CACHE.get(k)
+    if not t:
+        t = render_letter(letter)
+        t = rotate_letter(t, angle)
+        LETTER_CACHE[k] = t
+    draw.bitmap(coordinate, t, fill=color)
 
 def generate_image_base(username):
     user_hash = calc_hash(username)
     img = Image.new('RGB', (IMAGE_SIZE, 50))
     draw = ImageDraw.Draw(img)
-    font = FONT
     for i in range(4):
         a = random_color(user_hash[5+2*i:9+2*i])
         draw.rectangle(((i*IMAGE_SIZE/4, 0), ((i+1)*IMAGE_SIZE/4, 50)), fill=a)
@@ -85,7 +108,7 @@ def generate_image(base, username, name):
         rip /= 64
         rotation = (rip % 60) - 30
         rip /= 64
-        draw_rotated(img, rotation, letter, FONT, (250, 250, 250), (i*IMAGE_SIZE/4 + offset_x, offset_y), draw.textsize(letter, font=FONT))
+        draw_rotated(draw, rotation, letter, (250, 250, 250), (i*IMAGE_SIZE/4 + offset_x, offset_y))
     return img
 
 def random_image_from_base(base, username):
@@ -106,6 +129,7 @@ def pil_to_base64(pil_img):
     img_io = StringIO()
     pil_img.save(img_io, 'JPEG', quality=50)
     return base64.b64encode(img_io.getvalue())
+
 
 @app.route('/u/<username>/solution', methods=['POST'])
 def test_solution(username):
@@ -150,19 +174,21 @@ def get_random_image(username):
 
 @app.route('/u/<username>/image/<image_name>', methods=['GET'])
 def get_image_name(username, image_name):
-    return serve_pil_image(generate_image(username, image_name))
+    base = generate_image_base(username)
+    return serve_pil_image(generate_image(base, username, image_name))
 
 @app.route('/u/<username>/challenge', methods=['GET'])
 def get_challenge(username):
     result = []
     base = generate_image_base(username)
-    for i in range(10000):
+    for i in range(1000):
         image, name = random_image_from_base(base, username)
         result.append({
             'jpg_base64': pil_to_base64(image),
             'name': name
         })
-    return jsonify({'images': result})
+    return ujson.dumps({'images': result})
 
 if __name__ == "__main__":
+    app.wsgi_app = ProfilerMiddleware(app.wsgi_app)
     app.run(debug=True)
