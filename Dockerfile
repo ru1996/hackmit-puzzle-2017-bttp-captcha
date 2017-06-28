@@ -18,5 +18,5 @@ COPY . $APP_PATH
 
 WORKDIR $APP_PATH
 
-CMD ["uwsgi", "--static-map", "/static=static", "--chdir", "app", "--http", ":8000", "--wsgi-file", "app.py", "--callable", "app"]
+CMD ["uwsgi", "--static-map", "/static=static", "--chdir", "app", "--http", ":8000", "--wsgi-file", "app.py", "--callable", "app", "--processes", "4"]
 
