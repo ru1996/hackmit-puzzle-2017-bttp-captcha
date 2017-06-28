@@ -3,7 +3,7 @@ import os, base64
 from flask import Flask, jsonify, request, render_template, send_file
 from hashlib import md5
 
-from PIL import Image, ImageFont, ImageDraw
+from PIL import Image, ImageFont, ImageDraw, ImageOps
 
 from cStringIO import StringIO
 
@@ -16,22 +16,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', None)
 sentry = Sentry(app)
 
-def get_font(user_hash):
-    fonts = [
-        'ArchivoBlack-Regular',
-        'BreeSerif-Regular',
-        'Fresca-Regular',
-        'Frijole-Regular',
-        'Inconsolata-Bold',
-        'Lato-Bold',
-        'Merriweather-Bold',
-        'OpenSans-Bold',
-        'Oswald-Bold'
-    ]
-    name = fonts[int(user_hash[7:10], 16) % len(fonts)]
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    font = os.path.join(dir_path, 'fonts', name + '.ttf')
-    return ImageFont.truetype(font, size=24)
+FONT = ImageFont.truetype(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'fonts', 'ArchivoBlack-Regular.ttf'), size=24)
 
 def calc_hash(string):
     m = md5()
@@ -39,6 +24,7 @@ def calc_hash(string):
     return m.hexdigest()
 
 ALPHANUM = 'abcdefghijklmnopqrstuvwxyz0123456789'
+IMAGE_SIZE = 100
 
 def image_solution(h):
     result = ''
@@ -54,32 +40,61 @@ def hsv_to_better_color(hsv):
     a, b, c = colorsys.hsv_to_rgb(*hsv)
     return (int(a*256), int(b*256), int(c*256))
 
-def random_color_and_opposite(string):
+def random_color(string):
     x = int(string, 16)
     y = float(x) / 16**len(string)
-    hsv1 = (y, 1.0, 1.0)
-    hsv2 = ((y + 0.5) % 1.0, 1.0, 1.0)
-    return hsv_to_better_color(hsv1), hsv_to_better_color(hsv2)
+    hsv1 = (y, 1.0, 0.7)
+    return hsv_to_better_color(hsv1)
 
-def generate_image(username, name):
+def draw_rotated(image, angle, letter, font, color, coordinate, size):
+    txt=Image.new('L', size)
+    d = ImageDraw.Draw(txt)
+    d.text( (0, 0), letter,  font=font, fill=255)
+    w=txt.rotate(angle,  expand=1)
+    image.paste( ImageOps.colorize(w, (0,0,0), color), coordinate,  w)
+
+def generate_image_base(username):
     user_hash = calc_hash(username)
-    image_hash = calc_hash(username + name)
-    solution = image_solution(image_hash)
-    img = Image.new('RGB', (100, 50))
+    img = Image.new('RGB', (IMAGE_SIZE, 50))
     draw = ImageDraw.Draw(img)
-    font = get_font(user_hash)
-    for i, letter in enumerate(solution):
-        background_color, font_color = random_color_and_opposite(user_hash[5+2*i:9+2*i])
-        draw.rectangle(((i*25, 0), (i*25 + 25, 50)), fill=background_color)
-        rip = int(image_hash, 16)
-        offset_x = rip % 10
-        offset_y = (rip/64) % 20
-        draw.text((i*25 + offset_x, offset_y), letter, font=font, fill=font_color)
+    font = FONT
+    for i in range(4):
+        a = random_color(user_hash[5+2*i:9+2*i])
+        draw.rectangle(((i*IMAGE_SIZE/4, 0), ((i+1)*IMAGE_SIZE/4, 50)), fill=a)
+    r = int(user_hash, 16)
+    for i in range(4):
+        color =  (255, 255, 255)
+        r /= 2
+        start_loc = (r % (IMAGE_SIZE/4), (r/64) % 50)
+        r /= 256
+        end_loc = ((r % (IMAGE_SIZE/4)) + 3*IMAGE_SIZE/4, (r/64) % 50)
+        r /= 256
+        draw.line((start_loc, end_loc), fill=color, width=2)
     return img
 
-def random_image(username):
+def generate_image(base, username, name):
+    img = base.copy()
+    image_hash = calc_hash(username + name)
+    solution = image_solution(image_hash)
+    draw = ImageDraw.Draw(img)
+    rip = int(image_hash, 16)    
+    for i, letter in enumerate(solution):
+        offset_x = rip % ((IMAGE_SIZE/4 - 10) if i != 3 else 5)
+        rip /= 64
+        offset_y = rip % 20
+        rip /= 64
+        rotation = (rip % 60) - 30
+        rip /= 64
+        draw_rotated(img, rotation, letter, FONT, (250, 250, 250), (i*IMAGE_SIZE/4 + offset_x, offset_y), draw.textsize(letter, font=FONT))
+    return img
+
+def random_image_from_base(base, username):
     name = os.urandom(16).encode('hex')
-    return generate_image(username, name), name
+    return generate_image(base, username, name), name
+
+def random_image(username):
+    base = generate_image_base(username)
+    return random_image_from_base(base, username)
 
 def serve_pil_image(pil_img):
     img_io = StringIO()
@@ -140,8 +155,9 @@ def get_image_name(username, image_name):
 @app.route('/u/<username>/challenge', methods=['GET'])
 def get_challenge(username):
     result = []
-    for i in range(100):
-        image, name = random_image(username)
+    base = generate_image_base(username)
+    for i in range(10000):
+        image, name = random_image_from_base(base, username)
         result.append({
             'jpg_base64': pil_to_base64(image),
             'name': name
