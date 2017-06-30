@@ -7,8 +7,10 @@ itsdangerous==0.24
 Jinja2==2.9.6
 MarkupSafe==1.0
 olefile==0.44
+Pillow==4.1.1
 Pillow-SIMD==4.1.1.post0
 raven==6.1.0
+statsd==3.2.1
+ujson==1.35
 uWSGI==2.0.15
 Werkzeug==0.12.2
-ujson==1.35

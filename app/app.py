@@ -15,6 +15,11 @@ from werkzeug.contrib.profiler import ProfilerMiddleware
 
 import ujson
 
+import statsd
+
+statsd_client = statsd.StatsClient(os.environ.get('STATSD_HOST', ''), 8125)
+def incr_stat(name):
+    statsd_client.incr('puzzle.captcha.%s' % name)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', None)
@@ -148,11 +153,13 @@ def test_solution(username):
         else:
             incorrect += 1
     if correct >= 10000:
+        incr_stat('correct_solution')
         return jsonify({
             'message': "Congratulations! Marty and Doc are free. You are winrar.",
             'passcode': date_hash(app.secret_key, username)
         })
     else:
+        incr_stat('wrong_solution')
         return jsonify({
             'error': "Too few correct solutions",
             'message': "Insufficient number of correct solutions"
@@ -177,6 +184,7 @@ def get_image_name(username, image_name):
 
 @app.route('/u/<username>/challenge', methods=['GET'])
 def get_challenge(username):
+    incr_stat('challenge_requested')
     result = []
     base = generate_image_base(username)
     for i in range(1000):
