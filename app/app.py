@@ -157,7 +157,7 @@ def test_solution(username):
     else:
         return jsonify({
             'error': "Too few correct solutions",
-            'message': "None of your solutions were correct" if correct == 0 else "At least one of your solutions was correct"
+            'message': "Insufficient number of correct solutions"
         })
 
 @app.route('/', methods=['GET'])
