@@ -149,8 +149,6 @@ def test_solution(username):
             incorrect += 1
     if correct >= 10000:
         return jsonify({
-            'correct': correct,
-            'incorrect': incorrect,
             'message': "Congratulations! Marty and Doc are free. You are winrar.",
             'passcode': date_hash(app.secret_key, username)
         })
