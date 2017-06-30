@@ -18,8 +18,8 @@ import ujson
 import statsd
 
 statsd_client = statsd.StatsClient(os.environ.get('STATSD_HOST', ''), 8125)
-def incr_stat(name):
-    statsd_client.incr('puzzle.captcha.%s' % name)
+def incr_stat(name, count=1):
+    statsd_client.incr('puzzle.captcha.%s' % name, count)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', None)
@@ -152,6 +152,8 @@ def test_solution(username):
             solved.add(solution['name'])
         else:
             incorrect += 1
+    incr_stat('correct_single_captcha', count=correct)
+    incr_stat('incorrect_single_captcha', count=incorrect)
     if correct >= 10000:
         incr_stat('correct_solution')
         return jsonify({
