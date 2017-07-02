@@ -1,6 +1,6 @@
 import os, base64
 
-from flask import Flask, jsonify, request, render_template, send_file
+from flask import Flask, jsonify, request, render_template, send_file, abort
 from hashlib import md5
 
 from PIL import Image, ImageFont, ImageDraw, ImageOps
@@ -141,10 +141,16 @@ def test_solution(username):
     correct = 0
     incorrect = 0
     content = request.get_json(force=True)
+    if content.get('solutions') is None:
+        abort(400)
+        return
     if len(content['solutions']) > 15000:
         return jsonify({'error': "Too many answers submitted"})
     solved = set([])
     for solution in content['solutions']:
+        if solution.get('name') is None or solution.get('solution') is None:
+            abort(400)
+            return
         if solution['name'] in solved:
             continue
         if solution['solution'] == real_image_solution(username, solution['name']):
